@@ -1,0 +1,32 @@
+# Runs both services together with a single command:
+#   docker compose up --build
+#
+# Backend  -> http://localhost:8000
+# Frontend -> http://localhost:3000
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - RELOAD=false
+      - ALLOWED_ORIGINS=http://localhost:3000
+      - RISK_THRESHOLD_SUSPECT=0.33
+      - RISK_THRESHOLD_HIGH=0.66
+      - DL_EPOCHS=150
+      - DL_LEARNING_RATE=0.005
+      - DL_BATCH_SIZE=512
+      - RANDOM_SEED=42
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_BASE: http://localhost:8000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

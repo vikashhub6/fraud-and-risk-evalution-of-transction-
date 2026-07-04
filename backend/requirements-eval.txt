@@ -1,0 +1,8 @@
+# Extra dependencies for real_data_validation.py only.
+# Not needed to run the live API (main.py) — install separately when
+# you want to (re)generate the real-data evaluation artifacts.
+pandas>=2.2.0
+matplotlib>=3.9.0
+seaborn>=0.13.0
+shap>=0.46.0
+imbalanced-learn>=0.12.0
