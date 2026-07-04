@@ -17,11 +17,18 @@ COPY . .
 
 # --- Document which port the app listens on (informational; doesn't
 # actually publish it — that's done with `-p` on `docker run`) ---
-EXPOSE 8000
+EXPOSE 8080
 
 # --- Container startup command ---
+<<<<<<< HEAD
 # Uses shell form (not exec-array form) so $PORT gets expanded — Railway
 # (and most PaaS platforms) inject their own PORT env var at runtime and
 # route traffic to whatever port the app actually binds to. Falls back
 # to 8000 for local `docker run` / docker-compose where PORT isn't set.
 CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+=======
+# Runs the same way `python main.py` does locally, but explicitly via
+# uvicorn so host/port are unambiguous inside the container.
+
+CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"
+>>>>>>> 7c970e6b25acae350d6039fc6386f324297414cb
