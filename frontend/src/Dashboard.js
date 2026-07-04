@@ -13,15 +13,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const API_BASE = process.env.REACT_APP_API_BASE;
 
-if (!API_BASE) {
-  // eslint-disable-next-line no-console
-  console.error(
-    "REACT_APP_API_BASE is not set. Copy frontend/.env.example to frontend/.env " +
-      "and set it to your backend URL, then restart `npm start`."
-  );
-}
+const API_BASE = "https://fraud-and-risk-evalution-of-transction-production.up.railway.app";
 
 const RISK_COLORS = {
   Safe: "#22c55e",
