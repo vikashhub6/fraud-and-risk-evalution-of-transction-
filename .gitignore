@@ -12,6 +12,10 @@ backend/artifacts/*
 # committed on purpose so they render in the GitHub README.
 !backend/artifacts/real_data_eval/
 !backend/artifacts/real_data_eval/**
+# ...and except the pre-trained model artifacts — committed so the
+# container loads instantly at startup instead of retraining every deploy.
+!backend/artifacts/trained_model/
+!backend/artifacts/trained_model/**
 
 # Real dataset (large file, download separately — see backend/data/README.md)
 backend/data/*.csv

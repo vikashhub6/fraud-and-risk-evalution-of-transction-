@@ -16,7 +16,9 @@ No LLMs, no chatbots, no LangGraph, no Federated Learning anywhere in this file.
 """
 
 import os
+import json
 import numpy as np
+import joblib
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
@@ -32,7 +34,7 @@ from xgboost import XGBClassifier
 
 from config import settings
 
-MODEL_DIR = os.path.join(os.path.dirname(__file__), "artifacts")
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "artifacts", "trained_model")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 FEATURE_NAMES = [
@@ -228,6 +230,44 @@ class HybridFraudPipeline:
                 optimizer.step()
         self.dl_model.eval()
 
+    def save(self, directory: str = MODEL_DIR):
+        """
+        Persists the trained scaler, XGBoost model, PyTorch weights, and
+        evaluation metrics to disk so a future process can load() instead
+        of re-training from scratch.
+        """
+        os.makedirs(directory, exist_ok=True)
+        joblib.dump(self.scaler, os.path.join(directory, "scaler.joblib"))
+        self.xgb_model.save_model(os.path.join(directory, "xgb_model.json"))
+        torch.save(self.dl_model.state_dict(), os.path.join(directory, "dl_model.pt"))
+        with open(os.path.join(directory, "evaluation_metrics.json"), "w") as f:
+            json.dump(self.evaluation_metrics, f, indent=2)
+        return self
+
+    @classmethod
+    def load(cls, directory: str = MODEL_DIR) -> "HybridFraudPipeline":
+        """
+        Loads previously-trained artifacts from disk. Raises FileNotFoundError
+        if any artifact is missing, so callers can fall back to fit().
+        """
+        scaler_path = os.path.join(directory, "scaler.joblib")
+        xgb_path = os.path.join(directory, "xgb_model.json")
+        dl_path = os.path.join(directory, "dl_model.pt")
+        metrics_path = os.path.join(directory, "evaluation_metrics.json")
+
+        if not all(os.path.exists(p) for p in (scaler_path, xgb_path, dl_path, metrics_path)):
+            raise FileNotFoundError(f"Trained artifacts not found in {directory}")
+
+        instance = cls()
+        instance.scaler = joblib.load(scaler_path)
+        instance.xgb_model.load_model(xgb_path)
+        instance.dl_model.load_state_dict(torch.load(dl_path, map_location="cpu"))
+        instance.dl_model.eval()
+        with open(metrics_path) as f:
+            instance.evaluation_metrics = json.load(f)
+        instance._is_fitted = True
+        return instance
+
     def predict(self, feature_vector: list[float]) -> dict:
         """
         Runs a single transaction vector through the full ML -> DL pipeline.
@@ -278,7 +318,23 @@ _pipeline_instance: HybridFraudPipeline | None = None
 
 
 def get_pipeline() -> HybridFraudPipeline:
+    """
+    Returns the singleton pipeline instance. Tries to load pre-trained
+    artifacts from disk first (fast — milliseconds), and only falls back
+    to training from scratch (slow — this model takes ~90+ seconds on
+    modest CPUs) if no saved artifacts exist yet. This matters most on
+    PaaS deployments (Railway, Render, etc.) with limited startup CPU:
+    training inside the request/startup path can be slow enough to trip
+    platform health-check timeouts.
+    """
     global _pipeline_instance
     if _pipeline_instance is None:
-        _pipeline_instance = HybridFraudPipeline().fit()
+        try:
+            _pipeline_instance = HybridFraudPipeline.load()
+            print("Loaded pre-trained pipeline artifacts from disk.")
+        except FileNotFoundError:
+            print("No saved artifacts found — training pipeline from scratch...")
+            _pipeline_instance = HybridFraudPipeline().fit()
+            _pipeline_instance.save()
+            print("Training complete, artifacts saved for future startups.")
     return _pipeline_instance

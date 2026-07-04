@@ -5,3 +5,5 @@ venv/
 data/*.csv
 artifacts/*
 !artifacts/real_data_eval/
+!artifacts/trained_model/
+!artifacts/trained_model/**

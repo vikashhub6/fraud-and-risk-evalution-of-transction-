@@ -4,5 +4,6 @@ pydantic>=2.9.2
 python-dotenv>=1.0.1
 numpy>=2.1.0
 scikit-learn>=1.5.2
+joblib>=1.4.2
 xgboost>=2.1.1
 torch>=2.5.0
