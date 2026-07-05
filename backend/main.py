@@ -66,9 +66,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+ALLOWED_ORIGINS: list[str] = [
+    "https://fraud-and-risk-evalution-of-transct.vercel.app",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,  # from .env, never hardcoded / never "*"
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
